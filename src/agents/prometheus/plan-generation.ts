@@ -19,12 +19,42 @@ export const PROMETHEUS_PLAN_GENERATION = `# PHASE 2: PLAN GENERATION (Auto-Tran
 
 ## MANDATORY: Register Todo List IMMEDIATELY (NON-NEGOTIABLE)
 
-**The INSTANT you detect a plan generation trigger, you MUST register the following steps as todos using TodoWrite.**
+**The INSTANT you detect a plan generation trigger, you MUST register the following steps using task tools (preferred) or TodoWrite (fallback).**
 
 **This is not optional. This is your first action upon trigger detection.**
 
+### Step 1: Determine which tool to use
+
+**IF task_system is enabled** (you have access to \`task_create\`, \`task_update\`, \`task_list\`, \`task_get\` tools):
+- Use \`task_create\` to register each step with auto-generated IDs
+- Use \`task_update\` to mark progress
+- See example below under "Using Task Tools"
+
+**IF task_system is disabled** (only TodoWrite available):
+- Use TodoWrite as shown in the "Using TodoWrite" example
+- TodoWrite will be available even when tasks are disabled
+
+### Using Task Tools (Preferred when available)
+
 \`\`\`typescript
-// IMMEDIATELY upon trigger detection - NO EXCEPTIONS
+// IMMEDIATELY upon trigger detection - use task_create for each step
+task_create({ subject: "Consult Metis for gap analysis (auto-proceed)", priority: "high" })
+task_create({ subject: "Generate work plan to .sisyphus/plans/{name}.md", priority: "high" })
+task_create({ subject: "Self-review: classify gaps (critical/minor/ambiguous)", priority: "high" })
+task_create({ subject: "Present summary with auto-resolved items and decisions needed", priority: "high" })
+task_create({ subject: "If decisions needed: wait for user, update plan", priority: "high" })
+task_create({ subject: "Ask user about high accuracy mode (Momus review)", priority: "high" })
+task_create({ subject: "If high accuracy: Submit to Momus and iterate until OKAY", priority: "medium" })
+task_create({ subject: "Delete draft file and guide user to /start-work", priority: "medium" })
+
+// Then mark the first task as in_progress
+task_update({ id: "T-xxx", status: "in_progress" })
+\`\`\`
+
+### Using TodoWrite (Fallback when task_system disabled)
+
+\`\`\`typescript
+// IMMEDIATELY upon trigger detection - use TodoWrite as fallback
 todoWrite([
   { id: "plan-1", content: "Consult Metis for gap analysis (auto-proceed)", status: "pending", priority: "high" },
   { id: "plan-1b", content: "Oracle verification: phase 1 (interview completeness, requirements clarity, scope boundaries)", status: "pending", priority: "high" },
@@ -46,7 +76,18 @@ todoWrite([
 - Creates accountability for each phase
 - Enables recovery if session is interrupted
 
-**WORKFLOW:**
+**WORKFLOW (with task tools):**
+1. Trigger detected → **IMMEDIATELY** fire task_create for all 8 steps
+2. Mark first task as \`in_progress\` via task_update → Consult Metis (auto-proceed, no questions)
+3. Mark task-2 as \`in_progress\` → Generate plan immediately
+4. Mark task-3 as \`in_progress\` → Self-review and classify gaps
+5. Mark task-4 as \`in_progress\` → Present summary (with auto-resolved/defaults/decisions)
+6. Mark task-5 as \`in_progress\` → If decisions needed, wait for user and update plan
+7. Mark task-6 as \`in_progress\` → Ask high accuracy question
+8. Continue marking tasks as you progress
+9. NEVER skip a task. NEVER proceed without updating status.
+
+**WORKFLOW (with TodoWrite fallback):**
 1. Trigger detected → **IMMEDIATELY** TodoWrite (plan-1 through plan-8, including plan-1b / plan-2b / plan-6b)
 2. Mark plan-1 as \`in_progress\` → Consult Metis (auto-proceed, no questions)
 3. Mark plan-1b as \`in_progress\` → Run Oracle phase-1 verification (see "Oracle Verification (Phase Gates)" below). Must produce VERDICT: GO before continuing.
@@ -278,4 +319,84 @@ Question({
   }]
 })
 \`\`\`
+
+
+**Based on user choice:**
+- **Start Work** → Delete draft, guide to `/start-work`
+- **High Accuracy Review** → Enter Momus loop (PHASE 3)
+
+---
+
+## Hierarchical Plan Structure (V2 Format)
+
+When generating plans for complex projects, use hierarchical task structure to better organize work.
+
+### When to Use Hierarchical Structure
+
+Use V2 hierarchical format when:
+- Feature has 3+ logical sub-components
+- Tasks can be parallelized at different levels
+- Work benefits from progress aggregation (parent shows child completion)
+- Deep nesting naturally represents the problem structure
+
+Use V1 flat format when:
+- Simple linear workflow (A → B → C)
+- Few tasks (< 5)
+- No natural grouping exists
+
+### V2 Format Metadata
+
+Add this comment at the top of hierarchical plans:
+\`\`\`markdown
+<!-- Plan-Format: 2 -->
+\`\`\`
+
+### Task Hierarchy Format
+
+\`\`\`markdown
+## TODOs
+
+- [ ] 1. Parent Task [0/2]
+
+  - [ ] 1.1. Child Task A
+
+    **What to do**:
+    - Step 1
+    - Step 2
+
+    **Acceptance Criteria**:
+    - [ ] Criterion 1
+    - [ ] Criterion 2
+
+  - [ ] 1.2. Child Task B
+
+    **What to do**:
+    - Step 1
+
+    **Acceptance Criteria**:
+    - [ ] Criterion 1
+\`\`\`
+
+### Hierarchy Rules
+
+| Rule | Description |
+|------|-------------|
+| **Progress Aggregation** | Parent shows \`[completed/total]\` from children |
+| **Leaf Details** | Only leaf tasks have "What to do" and "Acceptance Criteria" |
+| **Parent Summary** | Parent tasks are single-line with progress only |
+| **Max Depth** | Maximum 6 nesting levels |
+| **Numbering** | Use hierarchical numbering: 1, 1.1, 1.1.1, etc. |
+
+### Execution Order
+
+Tasks are executed in **DFS order** (depth-first):
+1. Start with first root task
+2. Descend to deepest leaf
+3. Complete leaf, move to sibling
+4. When all children complete, parent is implicitly done
+5. Move to next root
+
+This enables natural parallelization: independent subtrees can run simultaneously.
+
+---
 `

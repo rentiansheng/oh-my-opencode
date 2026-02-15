@@ -4,6 +4,7 @@ import { PROMETHEUS_PLAN_GENERATION } from "./plan-generation"
 import { PROMETHEUS_SPEC_DRIVEN_MODE } from "./spec-driven-mode"
 import { PROMETHEUS_HIGH_ACCURACY_MODE } from "./high-accuracy-mode"
 import { PROMETHEUS_PLAN_TEMPLATE } from "./plan-template"
+import { PROMETHEUS_PLAN_TEMPLATE_V2 } from "./plan-template-v2"
 import { PROMETHEUS_BEHAVIORAL_SUMMARY } from "./behavioral-summary"
 import { getGptPrometheusPrompt } from "./gpt"
 import { getGeminiPrometheusPrompt } from "./gemini"
@@ -19,6 +20,12 @@ ${PROMETHEUS_PLAN_GENERATION}
 ${PROMETHEUS_SPEC_DRIVEN_MODE}
 ${PROMETHEUS_HIGH_ACCURACY_MODE}
 ${PROMETHEUS_PLAN_TEMPLATE}
+
+# Hierarchical Plan Template (V2)
+
+When generating hierarchical plans, use the following template structure:
+
+${PROMETHEUS_PLAN_TEMPLATE_V2}
 ${PROMETHEUS_BEHAVIORAL_SUMMARY}`
 
 /**
