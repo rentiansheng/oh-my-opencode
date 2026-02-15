@@ -41,6 +41,7 @@ export {
   createTaskCreateTool,
   createTaskGetTool,
   createTaskList,
+  createTaskTree,
   createTaskUpdateTool,
 } from "./task"
 export { createHashlineEditTool } from "./hashline-edit"

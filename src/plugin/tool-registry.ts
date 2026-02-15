@@ -24,6 +24,7 @@ import {
   createTaskCreateTool,
   createTaskGetTool,
   createTaskList,
+  createTaskTree,
   createTaskUpdateTool,
   createHashlineEditTool,
 } from "../tools"
@@ -182,6 +183,7 @@ export function createToolRegistry(args: {
         task_create: createTaskCreateTool(pluginConfig, ctx),
         task_get: createTaskGetTool(pluginConfig),
         task_list: createTaskList(pluginConfig),
+        task_tree: createTaskTree(pluginConfig),
         task_update: createTaskUpdateTool(pluginConfig, ctx),
       }
     : {}
