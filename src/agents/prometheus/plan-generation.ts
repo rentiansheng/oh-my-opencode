@@ -36,37 +36,79 @@ export const PROMETHEUS_PLAN_GENERATION = `# PHASE 2: PLAN GENERATION (Auto-Tran
 
 ### Using Task Tools (Preferred when available)
 
+**For flat linear workflows** (simple sequential steps):
 \`\`\`typescript
-// IMMEDIATELY upon trigger detection - use task_create for each step
-task_create({ subject: "Consult Metis for gap analysis (auto-proceed)", priority: "high" })
-task_create({ subject: "Generate work plan to .sisyphus/plans/{name}.md", priority: "high" })
-task_create({ subject: "Self-review: classify gaps (critical/minor/ambiguous)", priority: "high" })
-task_create({ subject: "Present summary with auto-resolved items and decisions needed", priority: "high" })
-task_create({ subject: "If decisions needed: wait for user, update plan", priority: "high" })
-task_create({ subject: "Ask user about high accuracy mode (Momus review)", priority: "high" })
-task_create({ subject: "If high accuracy: Submit to Momus and iterate until OKAY", priority: "medium" })
-task_create({ subject: "Delete draft file and guide user to /start-work", priority: "medium" })
+// Flat workflow - use sequential numbering: 1., 2., 3.
+task_create({ subject: "1. Consult Metis for gap analysis (auto-proceed)", metadata: { priority: "high" } })
+task_create({ subject: "2. Generate work plan to .sisyphus/plans/{name}.md", metadata: { priority: "high" } })
+task_create({ subject: "3. Self-review: classify gaps (critical/minor/ambiguous)", metadata: { priority: "high" } })
+task_create({ subject: "4. Present summary with auto-resolved items and decisions needed", metadata: { priority: "high" } })
+task_create({ subject: "5. If decisions needed: wait for user, update plan", metadata: { priority: "high" } })
+task_create({ subject: "6. Ask user about high accuracy mode (Momus review)", metadata: { priority: "high" } })
+task_create({ subject: "7. If high accuracy: Submit to Momus and iterate until OKAY", metadata: { priority: "medium" } })
+task_create({ subject: "8. Delete draft file and guide user to /start-work", metadata: { priority: "medium" } })
+\`\`\`
 
-// Then mark the first task as in_progress
-task_update({ id: "T-xxx", status: "in_progress" })
+**For hierarchical workflows** (parent-child task structure):
+\`\`\`typescript
+// Hierarchical workflow - use nested numbering: 1., 1.1., 1.1.1.
+// Parent task (root level)
+const parent1 = task_create({ subject: "1. Setup authentication system", metadata: { priority: "high" } })
+// Child tasks (use parentID to establish hierarchy)
+task_create({ subject: "1.1. Implement JWT token generation", parentID: parent1.task.id, metadata: { priority: "high" } })
+task_create({ subject: "1.2. Create login endpoint", parentID: parent1.task.id, metadata: { priority: "high" } })
+task_create({ subject: "1.3. Add password hashing", parentID: parent1.task.id, metadata: { priority: "high" } })
+
+// Another parent task
+const parent2 = task_create({ subject: "2. Build user management", metadata: { priority: "high" } })
+task_create({ subject: "2.1. User CRUD operations", parentID: parent2.task.id, metadata: { priority: "high" } })
+task_create({ subject: "2.2. Role-based permissions", parentID: parent2.task.id, metadata: { priority: "medium" } })
+
+// Deep nesting example (grandchild)
+const child = task_create({ subject: "2.1. User CRUD operations", parentID: parent2.task.id, metadata: { priority: "high" } })
+task_create({ subject: "2.1.1. Create user endpoint", parentID: child.task.id, metadata: { priority: "high" } })
+task_create({ subject: "2.1.2. Update user endpoint", parentID: child.task.id, metadata: { priority: "high" } })
+
+// Capture the auto-generated ID from task_create response, then update
+const response1 = task_create({ subject: "1. Consult Metis for gap analysis (auto-proceed)", metadata: { priority: "high" } })
+// response1 = { "task": { "id": "T-abc123", "subject": "..." } }
+task_update({ id: "T-abc123", status: "in_progress" })
 \`\`\`
 
 ### Using TodoWrite (Fallback when task_system disabled)
 
+**For flat linear workflows:**
 \`\`\`typescript
-// IMMEDIATELY upon trigger detection - use TodoWrite as fallback
+// Flat workflow - sequential numbering
 todoWrite([
-  { id: "plan-1", content: "Consult Metis for gap analysis (auto-proceed)", status: "pending", priority: "high" },
-  { id: "plan-1b", content: "Oracle verification: phase 1 (interview completeness, requirements clarity, scope boundaries)", status: "pending", priority: "high" },
-  { id: "plan-2", content: "Generate work plan to .omo/plans/{name}.md", status: "pending", priority: "high" },
-  { id: "plan-2b", content: "Oracle verification: phase 2 (plan compliance with constraints, parallelism, acceptance criteria)", status: "pending", priority: "high" },
-  { id: "plan-3", content: "Self-review: classify gaps (critical/minor/ambiguous)", status: "pending", priority: "high" },
-  { id: "plan-4", content: "Present summary with auto-resolved items and decisions needed", status: "pending", priority: "high" },
-  { id: "plan-5", content: "If decisions needed: wait for user, update plan", status: "pending", priority: "high" },
-  { id: "plan-6", content: "Ask user about high accuracy mode (Momus review)", status: "pending", priority: "high" },
-  { id: "plan-6b", content: "Oracle verification: phase 3 (plan readiness for execution before high-accuracy or handoff)", status: "pending", priority: "high" },
-  { id: "plan-7", content: "If high accuracy: Submit to Momus and iterate until OKAY", status: "pending", priority: "medium" },
-  { id: "plan-8", content: "Delete draft file and guide user to /start-work {name}", status: "pending", priority: "medium" }
+  { content: "1. Consult Metis for gap analysis (auto-proceed)", status: "pending", priority: "high" },
+  { content: "2. Generate work plan to .omo/plans/{name}.md", status: "pending", priority: "high" },
+  { content: "3. Self-review: classify gaps (critical/minor/ambiguous)", status: "pending", priority: "high" },
+  { content: "4. Present summary with auto-resolved items and decisions needed", status: "pending", priority: "high" },
+  { content: "5. If decisions needed: wait for user, update plan", status: "pending", priority: "high" },
+  { content: "6. Ask user about high accuracy mode (Momus review)", status: "pending", priority: "high" },
+  { content: "7. If high accuracy: Submit to Momus and iterate until OKAY", status: "pending", priority: "medium" },
+  { content: "8. Delete draft file and guide user to /start-work", status: "pending", priority: "medium" }
+])
+```
+
+**For hierarchical workflows:**
+```typescript
+// Hierarchical workflow - nested numbering: 1., 1.1., 1.1.1.
+// TodoWrite displays hierarchy through numbering prefix (visual hierarchy)
+todoWrite([
+  // Parent 1 and its children
+  { content: "1. Setup authentication system", status: "pending", priority: "high" },
+  { content: "1.1. Implement JWT token generation", status: "pending", priority: "high" },
+  { content: "1.2. Create login endpoint", status: "pending", priority: "high" },
+  { content: "1.3. Add password hashing", status: "pending", priority: "high" },
+  // Parent 2 and its children
+  { content: "2. Build user management", status: "pending", priority: "high" },
+  { content: "2.1. User CRUD operations", status: "pending", priority: "high" },
+  { content: "2.1.1. Create user endpoint", status: "pending", priority: "high" },
+  { content: "2.1.2. Update user endpoint", status: "pending", priority: "high" },
+  { content: "2.2. Role-based permissions", status: "pending", priority: "medium" }
+])
 ])
 \`\`\`
 
@@ -77,89 +119,26 @@ todoWrite([
 - Enables recovery if session is interrupted
 
 **WORKFLOW (with task tools):**
-1. Trigger detected → **IMMEDIATELY** fire task_create for all 8 steps
-2. Mark first task as \`in_progress\` via task_update → Consult Metis (auto-proceed, no questions)
-3. Mark task-2 as \`in_progress\` → Generate plan immediately
-4. Mark task-3 as \`in_progress\` → Self-review and classify gaps
-5. Mark task-4 as \`in_progress\` → Present summary (with auto-resolved/defaults/decisions)
-6. Mark task-5 as \`in_progress\` → If decisions needed, wait for user and update plan
-7. Mark task-6 as \`in_progress\` → Ask high accuracy question
+1. Trigger detected → **IMMEDIATELY** fire task_create for all 8 steps (with 1., 2., 3., etc. prefix)
+2. Mark task "1." as \`in_progress\` via task_update → Consult Metis (auto-proceed, no questions)
+3. Mark task "2." as \`in_progress\` → Generate plan immediately
+4. Mark task "3." as \`in_progress\` → Self-review and classify gaps
+5. Mark task "4." as \`in_progress\` → Present summary (with auto-resolved/defaults/decisions)
+6. Mark task "5." as \`in_progress\` → If decisions needed, wait for user and update plan
+7. Mark task "6." as \`in_progress\` → Ask high accuracy question
 8. Continue marking tasks as you progress
 9. NEVER skip a task. NEVER proceed without updating status.
 
 **WORKFLOW (with TodoWrite fallback):**
-1. Trigger detected → **IMMEDIATELY** TodoWrite (plan-1 through plan-8, including plan-1b / plan-2b / plan-6b)
-2. Mark plan-1 as \`in_progress\` → Consult Metis (auto-proceed, no questions)
-3. Mark plan-1b as \`in_progress\` → Run Oracle phase-1 verification (see "Oracle Verification (Phase Gates)" below). Must produce VERDICT: GO before continuing.
-4. Mark plan-2 as \`in_progress\` → Generate plan immediately
-5. Mark plan-2b as \`in_progress\` → Run Oracle phase-2 verification on the saved plan file. Must produce VERDICT: GO before continuing.
-6. Mark plan-3 as \`in_progress\` → Self-review and classify gaps
-7. Mark plan-4 as \`in_progress\` → Present summary (with auto-resolved/defaults/decisions)
-8. Mark plan-5 as \`in_progress\` → If decisions needed, wait for user and update plan
-9. Mark plan-6 as \`in_progress\` → Ask high accuracy question
-10. Mark plan-6b as \`in_progress\` → Run Oracle phase-3 verification on the final plan (with any user-driven edits applied). Must produce VERDICT: GO before handoff.
-11. Continue marking todos as you progress
-12. NEVER skip a todo. NEVER proceed without updating status. **Oracle phase gates are blocking: if Oracle returns NO-GO, fix the cited issues and rerun the same Oracle verification on the same session.**
-
-## Oracle Verification (Phase Gates)
-
-Three blocking phase gates use the Oracle agent (read-only consultant). Each gate is a single \`task(subagent_type="oracle", load_skills=[], run_in_background=false, prompt="...")\` invocation. The Oracle must return VERDICT: GO before the workflow continues. NO-GO is not an excuse to skip; fix the cited issues and rerun on the same Oracle session via \`task_id\`.
-
-### plan-1b: phase 1 verification (after Metis, before plan generation)
-
-\`\`\`typescript
-task(
-  subagent_type="oracle",
-  load_skills=[],
-  run_in_background=false,
-  prompt=\`Verify Prometheus phase 1 (interview) is complete and consistent. Read the draft at .omo/drafts/{name}.md and Metis's findings recorded in this session. Confirm:
-  1. Core objective is unambiguous (one sentence, no hidden alternates).
-  2. Scope IN / Scope OUT are both explicit.
-  3. Test strategy is decided (TDD / tests-after / none + agent QA).
-  4. No outstanding user questions remain.
-  5. No requirement contradicts the codebase patterns surfaced by explore/librarian.
-  Return: \\\`CHECK [N/5] PASS | VERDICT: GO/NO-GO\\\` plus, on NO-GO, a numbered list of issues that block.\`
-)
-\`\`\`
-
-### plan-2b: phase 2 verification (after plan generation, before self-review)
-
-\`\`\`typescript
-task(
-  subagent_type="oracle",
-  load_skills=[],
-  run_in_background=false,
-  prompt=\`Verify Prometheus phase 2 (plan generation). Read .omo/plans/{name}.md end to end. Confirm:
-  1. Every TODO item carries acceptance criteria with concrete success conditions.
-  2. Each task has a recommended agent profile and a Wave assignment.
-  3. Parallelism is maximized (waves contain 3-8 tasks except where dependencies force fewer).
-  4. Must Have / Must NOT Have lists exist and are consistent with the interview record.
-  5. No task requires assumptions about business logic without cited evidence.
-  6. Plan path is .omo/plans/, not docs/ or plans/.
-  7. All TODO task labels use bare-number format ("1. xxx"), NOT "T1.", "Phase 1:", "Task-1." etc.
-     All Final Wave labels use bare-number format with "F" prefix: "F1. xxx", "F2. xxx", NOT "T-F1.", "F-1.", "Final-1." etc.
-  Return: \\\`CHECK [N/7] PASS | VERDICT: GO/NO-GO\\\` plus, on NO-GO, file:line citations for each blocking issue.\`
-)
-\`\`\`
-
-### plan-6b: phase 3 verification (after high-accuracy decision, before handoff)
-
-\`\`\`typescript
-task(
-  subagent_type="oracle",
-  load_skills=[],
-  run_in_background=false,
-  prompt=\`Verify the plan at .omo/plans/{name}.md is ready for execution by /start-work. Confirm:
-  1. Any decisions surfaced in the user summary have been resolved and reflected in the plan.
-  2. The final-wave reviewer set (F1-F4) is present and addressable.
-  3. Commit strategy and verification commands are stated.
-  4. The plan is internally consistent after the most recent edits.
-  5. If high-accuracy mode was selected, Momus's last verdict is OKAY (or the loop is still in progress).
-  Return: \\\`CHECK [N/5] PASS | VERDICT: GO/NO-GO\\\` plus, on NO-GO, what to fix.\`
-)
-\`\`\`
-
-**Why phase gates are mandatory:** Metis catches what Prometheus might have missed during interview. Oracle catches what Prometheus might be wrong about. Both run before code is touched. NO-GO is a directive to fix, not a license to abandon the gate.
+1. Trigger detected → **IMMEDIATELY** TodoWrite (all steps with hierarchical numbering)
+2. Mark first task as \`in_progress\` → Consult Metis (auto-proceed, no questions)
+3. Mark next task as \`in_progress\` → Generate plan immediately
+4. Mark next task as \`in_progress\` → Self-review and classify gaps
+5. Mark next task as \`in_progress\` → Present summary (with auto-resolved/defaults/decisions)
+6. Mark next task as \`in_progress\` → If decisions needed, wait for user and update plan
+7. Mark next task as \`in_progress\` → Ask high accuracy question
+8. Continue marking todos as you progress
+9. NEVER skip a todo. NEVER proceed without updating status.
 
 ## Pre-Generation: Metis Consultation (MANDATORY)
 
@@ -351,30 +330,94 @@ Add this comment at the top of hierarchical plans:
 <!-- Plan-Format: 2 -->
 \`\`\`
 
+### CRITICAL: Waves → Parent Tasks Mapping
+
+**Execution Waves from the "Execution Strategy" section MUST become parent tasks in the TODOs section.**
+
+| Execution Strategy | TODOs Section |
+|-------------------|---------------|
+| Wave 1 (Foundation) | \`1. Wave 1: Foundation [0/N]\` |
+| Wave 2 (Authentication) | \`2. Wave 2: Authentication [0/N]\` |
+| Wave 3 (Features) | \`3. Wave 3: Features [0/N]\` |
+| Task within Wave 1 | \`1.1. Initialize Project\`, \`1.2. Database Setup\` |
+| Task within Wave 2 | \`2.1. JWT Strategy\`, \`2.2. Login Endpoint\` |
+
+**This is NOT optional.** If your plan has waves, those waves MUST be parent tasks with children.
+
+**WRONG (flat numbering despite having waves):**
+\`\`\`markdown
+## TODOs
+- [ ] 1. Initialize Project [0/1]
+- [ ] 2. Database Setup [0/1]
+- [ ] 3. JWT Strategy [0/1]
+- [ ] 4. Login Endpoint [0/1]
+\`\`\`
+
+**CORRECT (waves as parents with hierarchical children):**
+\`\`\`markdown
+## TODOs
+- [ ] 1. Wave 1: Foundation [0/2]
+  - [ ] 1.1. Initialize Project
+  - [ ] 1.2. Database Setup
+- [ ] 2. Wave 2: Authentication [0/2]
+  - [ ] 2.1. JWT Strategy
+  - [ ] 2.2. Login Endpoint
+\`\`\`
+
 ### Task Hierarchy Format
 
 \`\`\`markdown
 ## TODOs
 
-- [ ] 1. Parent Task [0/2]
+- [ ] 1. Wave 1: Foundation [0/3]
 
-  - [ ] 1.1. Child Task A
-
-    **What to do**:
-    - Step 1
-    - Step 2
-
-    **Acceptance Criteria**:
-    - [ ] Criterion 1
-    - [ ] Criterion 2
-
-  - [ ] 1.2. Child Task B
+  - [ ] 1.1. Initialize Project
 
     **What to do**:
-    - Step 1
+    - Create project structure
+    - Install dependencies
 
     **Acceptance Criteria**:
-    - [ ] Criterion 1
+    - [ ] Project builds successfully
+    - [ ] Dependencies installed
+
+  - [ ] 1.2. Database Configuration
+
+    **What to do**:
+    - Configure connection
+    - Create schemas
+
+    **Acceptance Criteria**:
+    - [ ] Database connects
+    - [ ] Migrations run
+
+  - [ ] 1.3. Basic App Setup
+
+    **What to do**:
+    - Configure app module
+    - Setup validation
+
+    **Acceptance Criteria**:
+    - [ ] App starts
+    - [ ] Validation works
+
+- [ ] 2. Wave 2: Core Features [0/2]
+
+  - [ ] 2.1. Authentication Module
+
+    **What to do**:
+    - Implement JWT strategy
+
+    **Acceptance Criteria**:
+    - [ ] JWT tokens generated
+
+  - [ ] 2.2. User Registration
+
+    **What to do**:
+    - Create registration endpoint
+
+    **Acceptance Criteria**:
+    - [ ] Users can register
 \`\`\`
 
 ### Hierarchy Rules
